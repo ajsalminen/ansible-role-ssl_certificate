@@ -1,0 +1,25 @@
+---
+
+- name: Create directory for ssl certificate
+  file: dest={{ ssl_certificate_dir }} state=directory owner=root group=root mode=0755
+
+- name: copy intermediate certificate bundle
+  copy: src={{ssl_certificate_assets_path}}/{{ssl_certificate_bundle}} dest={{ ssl_certificate_dir }}
+             owner=root group=root mode=0644
+
+- name: copy certificate
+  copy: src={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} dest={{ ssl_certificate_dir }}
+             owner=root group=root mode=0644
+
+
+- name: decrypt ssl private key for installation
+  local_action: shell echo '{{ssl_passphrase}}' | /usr/bin/openssl rsa -passin stdin -in {{ssl_certificate_assets_path}}/{{ssl_certificate_key}}
+  register: ssl_key
+  sudo: false
+  when: ssl_passphrase is defined
+  always_run: yes
+
+- name: copy certificate private key
+  copy: content='{{ ssl_key.stdout }}' dest={{ ssl_certificate_dir }}/{{ssl_certificate_key}}
+             owner=root group=root mode=0600
+  when: ssl_passphrase is defined
