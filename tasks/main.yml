@@ -29,5 +29,5 @@
   when: ssl_passphrase is defined
 
 - name: Concatenate certificate bundle with certificate.
-  shell: cat {{ssl_certificate_certificate_dir}}/{{ssl_certificate_bundle}} {{ssl_certificate_certificate_dir}}/{{ssl_certificate_certificate}} > {{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}}
+  shell: cat {{ssl_certificate_certificate_dir}}/{{ssl_certificate_certificate}} {{ssl_certificate_certificate_dir}}/{{ssl_certificate_bundle}} > {{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}}
   when: ssl_certificate_generate_chained == True
