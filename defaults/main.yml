@@ -1,12 +1,25 @@
 ---
-PLAYBOOK_PRIVATE_ROLE_ASSETS_PATH: "{{playbook_dir}}/assets/private/roles/"
+PLAYBOOK_PRIVATE_ROLE_ASSETS_PATH: "{{playbook_dir}}assets/private/roles/"
 
+ssl_certificate_group: root
+ssl_certificate_self_signed: True
 ssl_certificate_assets_path: "{{PLAYBOOK_PRIVATE_ROLE_ASSETS_PATH}}ssl_certificate"
+ssl_certificate_ca_assets_path: "{{PLAYBOOK_PRIVATE_ROLE_ASSETS_PATH}}ssl_certificate/ca"
 ssl_certificate_key_common_name: ssl_certificate
 ssl_certificate_key: "{{ssl_certificate_key_common_name}}.key"
-ssl_certificate_bundle:  "{{ssl_certificate_key_common_name}}.bundle.crt"
+ssl_certificate_csr: "{{ssl_certificate_key_common_name}}.csr"
+ssl_certificate_days: 10000
+ssl_certificate_ca_certificates:  "{{ssl_certificate_key_common_name}}.bundle.crt"
 ssl_certificate_certificate: "{{ssl_certificate_key_common_name}}.crt"
 ssl_certificate_chained: "{{ssl_certificate_key_common_name}}.chained.crt"
+ssl_certificate_ca_key: "{{ssl_certificate_key_common_name}}_ca.key"
+ssl_certificate_ca_serial: "{{ssl_certificate_key_common_name}}_ca.serial"
+ssl_certificate_ca_days: 10000
+ssl_certificate_ca_subject: "/CN=snakeoil-ca"
+ssl_certificate_ca_passphrase: changeme
 ssl_certificate_generate_chained: False
 ssl_certificate_certificate_dir: /etc/ssl/local/certs
 ssl_certificate_key_dir: /etc/ssl/local/keys
+ssl_certificate_subject: "/C=US/O=SomeOrg/OU=SomeOU/L=Somewhere/ST=CA/CN=machine.example.net"
+ssl_certificate_signing_options: -subj "{{ ssl_certificate_subject }}"
+ssl_certificate_openssl_path: /usr/bin/openssl
