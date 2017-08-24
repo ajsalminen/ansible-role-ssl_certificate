@@ -9,9 +9,7 @@
 
 - name: Create directory for local certificate assets.
   local_action: file dest={{ item }} state=directory
-  sudo: yes
-  # become: False
-  # become_method: sudo
+  become: False
   with_items:
     - "{{ ssl_certificate_assets_path }}"
     - "{{ ssl_certificate_ca_assets_path }}"
