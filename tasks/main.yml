@@ -18,13 +18,13 @@
 
 - name: Generate key.
   local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_key}} echo '{{ ssl_passphrase }}' | {{ ssl_certificate_openssl_path }} genrsa -passout stdin -des3 -out {{ssl_certificate_assets_path}}/{{ssl_certificate_key}} 2048
-  sudo: False
+  become: False
 
 - name: Generate CSR.
   local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} echo '{{ ssl_passphrase }}' | {{ ssl_certificate_openssl_path }} req -new -passin stdin -key {{ssl_certificate_assets_path}}/{{ssl_certificate_key}} -out {{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} {{ ssl_certificate_signing_options }}
   environment:
     OPENSSL_CONF: /etc/ssl/openssl.cnf
-  sudo: False
+  become: False
 
 - include: generate_ca_and_sign.yml
   when: ssl_certificate_self_signed == True
@@ -33,7 +33,7 @@
 - name: decrypt ssl private key for installation
   local_action: shell echo '{{ssl_passphrase}}' | {{ ssl_certificate_openssl_path }} rsa -passin stdin -in {{ssl_certificate_assets_path}}/{{ssl_certificate_key}}
   register: ssl_key
-  sudo: False
+  become: False
   when: ssl_passphrase is defined
   always_run: yes
 
@@ -45,7 +45,7 @@
 - name: Check if we have a certificate
   local_action: stat path={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}}
   register: certificate_file
-  sudo: False
+  become: False
 
 - name: copy certificate
   copy: src={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} dest={{ ssl_certificate_certificate_dir }}
@@ -57,7 +57,7 @@
 - name: Check if we have a bundle/root certificate
   local_action: stat path={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}}
   register: ca_certificates_file
-  sudo: False
+  become: False
 
 - name: copy intermediate certificate bundle/root certificate (self-signed)
   copy: src={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} dest={{ ssl_certificate_certificate_dir }}
