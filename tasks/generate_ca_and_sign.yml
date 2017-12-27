@@ -2,12 +2,12 @@
 # generate root ca key and cert
 - name: Generate CA root certificate key.
   local_action: shell creates={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_key}} echo '{{ ssl_certificate_ca_passphrase }}' | openssl genrsa -passout stdin -des3 -out {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_key}} 2048
-  sudo: False
+  become: False
 
 - name: Generate a CA root certificate.
   local_action: shell creates={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} echo '{{ ssl_certificate_ca_passphrase }}' |  openssl req -x509 -new -passin stdin -key {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_key}} -days {{ ssl_certificate_ca_days }} -out {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} -subj {{ ssl_certificate_ca_subject }}
-  sudo: False
+  become: False
 
 - name: Sign certificate with CA.
   local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} echo '{{ ssl_certificate_ca_passphrase }}' | openssl x509 -req -passin stdin -days {{ ssl_certificate_days }} -in {{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} -CA {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} -CAkey {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_key}} -CAcreateserial  -CAserial {{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_serial}} -out {{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} -extfile {{role_path}}/files/v3.ext
-  sudo: False
+  become: False
