@@ -40,6 +40,7 @@
 - name: copy certificate private key
   copy: content='{{ ssl_key.stdout }}' dest={{ ssl_certificate_key_dir }}/{{ssl_certificate_key}}
              owner=root group={{ ssl_certificate_group }} mode=0600
+  register: key_copied
   when: ssl_passphrase is defined
 
 - name: Check if we have a certificate
@@ -50,6 +51,7 @@
 - name: copy certificate
   copy: src={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} dest={{ ssl_certificate_certificate_dir }}
              owner=root group={{ ssl_certificate_group }} mode=0644
+  register: certificate_copied
   when: certificate_file.stat.exists
 
 # bundle tasks
@@ -62,9 +64,15 @@
 - name: copy intermediate certificate bundle/root certificate (self-signed)
   copy: src={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} dest={{ ssl_certificate_certificate_dir }}
              owner=root group={{ ssl_certificate_group }} mode=0644
+  register: bundle_copied
   when: ca_certificates_file.stat.exists
 
 
 - name: Concatenate certificate bundle with certificate.
-  shell: creates={{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}} cat {{ssl_certificate_certificate_dir}}/{{ssl_certificate_certificate}} {{ssl_certificate_certificate_dir}}/{{ssl_certificate_ca_certificates}} > {{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}}
-  when: ssl_certificate_generate_chained == True and ca_certificates_file.stat.exists and certificate_file.stat.exists
+  shell: cat {{ssl_certificate_certificate_dir}}/{{ssl_certificate_certificate}} {{ssl_certificate_certificate_dir}}/{{ssl_certificate_ca_certificates}} > {{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}}
+  when: ssl_certificate_generate_chained == True and ca_certificates_file.stat.exists and certificate_file.stat.exists and (certificate_copied.changed or bundle_copied.changed)
+
+- name: Restart web server
+  service:
+    name={{ ssl_certificate_web_server }} state=restarted
+  when: ssl_certificate_web_server != '' and (key_copied.changed or certificate_copied.changed or bundle_copied.changed)
