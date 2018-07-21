@@ -23,7 +23,7 @@
 - name: Generate CSR.
   local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} echo '{{ ssl_passphrase }}' | {{ ssl_certificate_openssl_path }} req -new -passin stdin -key {{ssl_certificate_assets_path}}/{{ssl_certificate_key}} -out {{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} {{ ssl_certificate_signing_options }}
   environment:
-    OPENSSL_CONF: /etc/ssl/openssl.cnf
+    OPENSSL_CONF: "{{ role_path }}/files/openssl.cnf"
   become: False
 
 - include: generate_ca_and_sign.yml
