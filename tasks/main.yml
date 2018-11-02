@@ -35,7 +35,7 @@
   register: ssl_key
   become: False
   when: ssl_passphrase is defined
-  always_run: yes
+  check_mode: no
 
 - name: copy certificate private key
   copy: content='{{ ssl_key.stdout }}' dest={{ ssl_certificate_key_dir }}/{{ssl_certificate_key}}
