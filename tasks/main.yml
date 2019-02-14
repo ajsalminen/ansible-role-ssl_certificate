@@ -39,7 +39,7 @@
 
 - name: copy certificate private key
   copy: content='{{ ssl_key.stdout }}' dest={{ ssl_certificate_key_dir }}/{{ssl_certificate_key}}
-             owner=root group={{ ssl_certificate_group }} mode=0600
+             owner=root group={{ ssl_certificate_group }} mode='u=rw,g=r'
   register: key_copied
   when: ssl_passphrase is defined
 
