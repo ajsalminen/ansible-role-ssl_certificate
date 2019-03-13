@@ -24,3 +24,12 @@ ssl_certificate_subject: "/C=US/O=SomeOrg/OU=SomeOU/L=Somewhere/ST=CA/CN=machine
 ssl_certificate_signing_options: -subj "{{ ssl_certificate_subject }}"
 ssl_certificate_openssl_path: /usr/bin/openssl
 ssl_certificate_web_server: ''
+
+### local path - mkcert
+# Control machine
+ssl_certificate_mkcert_local_dir: '{{playbook_dir}}/.local/.mkcert'
+# Target host
+ssl_certificate_mkcert_target_dir: /opt
+ssl_certificate_mkcert_url: https://github.com/FiloSottile/mkcert/releases/download/v1.3.0/mkcert-v1.3.0-linux-amd64
+ssl_certificate_mkcert_generated_cert_dir: /tmp
+ssl_certificate_mkcert_target_root_ca_dir: /root/.mkcert

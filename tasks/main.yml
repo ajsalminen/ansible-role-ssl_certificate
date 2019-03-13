@@ -1,78 +1,9 @@
 ---
 
-# prepare
-- name: Create directories for ssl certificate files.
-  file: dest={{ ssl_certificate_certificate_dir }} state=directory owner=root group={{ ssl_certificate_group }} mode=0755
+# Real certificate path
+- include_tasks: production.yml
+  when: local_test_environment is not defined
 
-- name: Create directory for ssl certificate files.
-  file: dest={{ ssl_certificate_key_dir }} state=directory owner=root group={{ ssl_certificate_group }} mode=0755
-
-- name: Create directory for local certificate assets.
-  local_action: file dest={{ item }} state=directory
-  become: False
-  with_items:
-    - "{{ ssl_certificate_assets_path }}"
-    - "{{ ssl_certificate_ca_assets_path }}"
-
-# generate host cert
-
-- name: Generate key.
-  local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_key}} echo '{{ ssl_passphrase }}' | {{ ssl_certificate_openssl_path }} genrsa -passout stdin -des3 -out {{ssl_certificate_assets_path}}/{{ssl_certificate_key}} 2048
-  become: False
-
-- name: Generate CSR.
-  local_action: shell creates={{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} echo '{{ ssl_passphrase }}' | {{ ssl_certificate_openssl_path }} req -new -passin stdin -key {{ssl_certificate_assets_path}}/{{ssl_certificate_key}} -out {{ssl_certificate_assets_path}}/{{ssl_certificate_csr}} {{ ssl_certificate_signing_options }}
-  environment:
-    OPENSSL_CONF: "{{ role_path }}/files/openssl.cnf"
-  become: False
-
-- include: generate_ca_and_sign.yml
-  when: ssl_certificate_self_signed == True
-
-# certificate installation tasks
-- name: decrypt ssl private key for installation
-  local_action: shell echo '{{ssl_passphrase}}' | {{ ssl_certificate_openssl_path }} rsa -passin stdin -in {{ssl_certificate_assets_path}}/{{ssl_certificate_key}}
-  register: ssl_key
-  become: False
-  when: ssl_passphrase is defined
-  check_mode: no
-
-- name: copy certificate private key
-  copy: content='{{ ssl_key.stdout }}' dest={{ ssl_certificate_key_dir }}/{{ssl_certificate_key}}
-             owner=root group={{ ssl_certificate_group }} mode='u=rw,g=r'
-  register: key_copied
-  when: ssl_passphrase is defined
-
-- name: Check if we have a certificate
-  local_action: stat path={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}}
-  register: certificate_file
-  become: False
-
-- name: copy certificate
-  copy: src={{ssl_certificate_assets_path}}/{{ssl_certificate_certificate}} dest={{ ssl_certificate_certificate_dir }}
-             owner=root group={{ ssl_certificate_group }} mode=0644
-  register: certificate_copied
-  when: certificate_file.stat.exists
-
-# bundle tasks
-
-- name: Check if we have a bundle/root certificate
-  local_action: stat path={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}}
-  register: ca_certificates_file
-  become: False
-
-- name: copy intermediate certificate bundle/root certificate (self-signed)
-  copy: src={{ssl_certificate_ca_assets_path}}/{{ssl_certificate_ca_certificates}} dest={{ ssl_certificate_certificate_dir }}
-             owner=root group={{ ssl_certificate_group }} mode=0644
-  register: bundle_copied
-  when: ca_certificates_file.stat.exists
-
-
-- name: Concatenate certificate bundle with certificate.
-  shell: cat {{ssl_certificate_certificate_dir}}/{{ssl_certificate_certificate}} {{ssl_certificate_certificate_dir}}/{{ssl_certificate_ca_certificates}} > {{ssl_certificate_certificate_dir}}/{{ssl_certificate_chained}}
-  when: ssl_certificate_generate_chained == True and ca_certificates_file.stat.exists and certificate_file.stat.exists and (certificate_copied.changed or bundle_copied.changed)
-
-- name: Restart web server
-  service:
-    name={{ ssl_certificate_web_server }} state=restarted
-  when: ssl_certificate_web_server != '' and (key_copied.changed or certificate_copied.changed or bundle_copied.changed)
+# mkcert path
+- include_tasks: local.yml
+  when: local_test_environment is defined

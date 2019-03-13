@@ -1,0 +1,94 @@
+---
+
+- name: Create local directory for mkcert stuff
+  file:
+    path: '{{ ssl_certificate_mkcert_local_dir }}'
+    state: directory
+  delegate_to: localhost
+  connection: local
+  become: no
+
+# Get mkcert tool
+- name: Download mkcert from github
+  get_url:
+    url: '{{ ssl_certificate_mkcert_url }}'
+    dest: '{{ ssl_certificate_mkcert_local_dir }}/mkcert'
+    mode: 0750
+  delegate_to: localhost
+  connection: local
+  become: no
+
+- name: Download mkcert from github (to virtual dev machine)
+  get_url:
+    url: '{{ ssl_certificate_mkcert_url }}'
+    dest: '{{ ssl_certificate_mkcert_target_dir }}/mkcert'
+    mode: 0750
+
+# First install the local CA
+- name: Install local CA
+  command: '{{ ssl_certificate_mkcert_local_dir }}/mkcert -install' 
+  delegate_to: localhost
+  connection: local
+  become: no
+
+- name: Generate certificates with mkcert
+  command: >
+    {{ ssl_certificate_mkcert_local_dir }}/mkcert
+    -cert-file {{ ssl_certificate_mkcert_generated_cert_dir }}/{{ ssl_certificate_chained }}
+    -key-file {{ ssl_certificate_mkcert_generated_cert_dir }}/{{ ssl_certificate_key }}
+    {{ ssl_certificate_key_common_name }}.local
+    *.{{ ssl_certificate_key_common_name }}.local 
+
+  delegate_to: localhost
+  connection: local
+  become: no
+
+# Copy generated certificates to target host
+- name: Copy certificate private key
+  copy: 
+    src: '{{ ssl_certificate_mkcert_generated_cert_dir }}/{{ssl_certificate_key}}'
+    dest: '{{ ssl_certificate_key_dir }}/{{ssl_certificate_key}}'
+    owner: root 
+    group: '{{ ssl_certificate_group }}'
+    mode: 'u=rw,g=r'
+
+- name: Copy certificate
+  copy: 
+    src: '{{ ssl_certificate_mkcert_generated_cert_dir }}/{{ssl_certificate_chained}}'
+    dest: '{{ ssl_certificate_certificate_dir }}/{{ssl_certificate_chained}}'
+    owner: root 
+    group: '{{ ssl_certificate_group }}'
+    mode: 'u=rw,g=r,o=r'
+
+- name: Check for rootCA.pem
+  command: '{{ ssl_certificate_mkcert_local_dir }}/mkcert -CAROOT'
+  register: root_certificate
+  delegate_to: localhost
+  connection: local
+  become: no
+
+- debug:
+    var: root_certificate
+
+- name: Creates suitable directory for the rootCA.pem
+  file:
+    path: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
+    state: directory
+
+# In order for target host to make valid calls with wget, curl etc. The local CA need to installed to target host.
+- name: Copy rootCA.pem
+  copy: 
+    src: '{{ root_certificate.stdout }}/rootCA.pem'
+    dest: '{{ ssl_certificate_mkcert_target_root_ca_dir }}/rootCA.pem'
+
+- name: Set $CAROOT env to rootCA.pem directory
+  shell: 'echo $CAROOT'
+  environment:
+    CAROOT: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
+
+- name: Install rootCA on target machine
+  command: '{{ ssl_certificate_mkcert_target_dir }}/mkcert -install'
+  notify: restart webserver
+
+- debug:
+    msg: 'Please restart all open browsers in order for the certificates to take effect.'
