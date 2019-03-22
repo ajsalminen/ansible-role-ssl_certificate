@@ -43,6 +43,22 @@
   connection: local
   become: no
 
+
+# This might be run before nginx or apache2 install's, so correct folders need
+# to be created.
+# create a directory if it doesn't exist
+- name: Create directory for private key if does not exist
+  file:
+    path: '{{ ssl_certificate_key_dir }}'
+    state: directory
+    # TODO: What are the correct permissions for this folder
+
+- name: Create directory for ssl certificate if does not exist
+  file:
+    path: '{{ ssl_certificate_certificate_dir }}'
+    state: directory
+    # TODO: What are the correct permissions for this folder
+
 # Copy generated certificates to target host
 - name: Copy certificate private key
   copy: 
@@ -67,9 +83,6 @@
   connection: local
   become: no
 
-- debug:
-    var: root_certificate
-
 - name: Creates suitable directory for the rootCA.pem
   file:
     path: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
@@ -81,14 +94,12 @@
     src: '{{ root_certificate.stdout }}/rootCA.pem'
     dest: '{{ ssl_certificate_mkcert_target_root_ca_dir }}/rootCA.pem'
 
-- name: Set $CAROOT env to rootCA.pem directory
-  shell: 'echo $CAROOT'
-  environment:
-    CAROOT: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
 
 - name: Install rootCA on target machine
   command: '{{ ssl_certificate_mkcert_target_dir }}/mkcert -install'
-  notify: restart webserver
+  environment:
+    CAROOT: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
+#  notify: restart webserver
 
 - debug:
     msg: 'Please restart all open browsers in order for the certificates to take effect.'
