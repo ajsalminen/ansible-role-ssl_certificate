@@ -1,6 +1,6 @@
 ---
 
-- name: Create local directory for mkcert stuff
+- name: Create mkcert install directory at localhost
   file:
     path: '{{ ssl_certificate_mkcert_local_dir }}'
     state: directory
@@ -8,21 +8,27 @@
   connection: local
   become: no
 
-# Get mkcert tool
-- name: Download mkcert from github
+- name: Create mkcert install directory at target host
+  file:
+    path: '{{ ssl_certificate_mkcert_target_dir }}'
+    state: directory
+
+- name: Download mkcert from github (to localhost)
   get_url:
     url: '{{ ssl_certificate_mkcert_url }}'
     dest: '{{ ssl_certificate_mkcert_local_dir }}/mkcert'
-    mode: 0750
+    checksum: 'sha256:{{ssl_certificate_mkcert_checksum}}'
+    mode: u=rwx,g=rx
   delegate_to: localhost
   connection: local
   become: no
 
-- name: Download mkcert from github (to virtual dev machine)
+- name: Download mkcert from github (to target host)
   get_url:
     url: '{{ ssl_certificate_mkcert_url }}'
     dest: '{{ ssl_certificate_mkcert_target_dir }}/mkcert'
-    mode: 0750
+    checksum: 'sha256:{{ssl_certificate_mkcert_checksum}}'
+    mode: u=rwx,g=rx
 
 # First install the local CA
 - name: Install local CA
@@ -31,33 +37,36 @@
   connection: local
   become: no
 
+- name: Add domain suffix
+  set_fact: 
+    ssl_certificate_full_domain_name: '{{ ssl_certificate_key_common_name }}{{ ssl_certificate_mkcert_common_name_suffix }}'
+
+- name: Combine all domain names into one list
+  set_fact:
+    ssl_certificate_all_domains: >
+      '{{ [{{ ssl_certificate_full_domain_name }},
+      *.{{ssl_certificate_full_domain_name}}] +
+      ssl_certificate_mkcert_additional_names }}'
+
 - name: Generate certificates with mkcert
   command: >
     {{ ssl_certificate_mkcert_local_dir }}/mkcert
     -cert-file {{ ssl_certificate_mkcert_generated_cert_dir }}/{{ ssl_certificate_chained }}
     -key-file {{ ssl_certificate_mkcert_generated_cert_dir }}/{{ ssl_certificate_key }}
-    {{ ssl_certificate_key_common_name }}.local
-    *.{{ ssl_certificate_key_common_name }}.local 
-
+    {{ ssl_certificate_all_domains | join(' ') }}
   delegate_to: localhost
   connection: local
   become: no
 
-
-# This might be run before nginx or apache2 install's, so correct folders need
-# to be created.
-# create a directory if it doesn't exist
-- name: Create directory for private key if does not exist
+- name: Create directory for private key if it does not exist
   file:
     path: '{{ ssl_certificate_key_dir }}'
     state: directory
-    # TODO: What are the correct permissions for this folder
 
-- name: Create directory for ssl certificate if does not exist
+- name: Create directory for ssl certificate if it does not exist
   file:
     path: '{{ ssl_certificate_certificate_dir }}'
     state: directory
-    # TODO: What are the correct permissions for this folder
 
 # Copy generated certificates to target host
 - name: Copy certificate private key
@@ -83,12 +92,12 @@
   connection: local
   become: no
 
-- name: Creates suitable directory for the rootCA.pem
+- name: Create directory for the rootCA.pem
   file:
     path: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
     state: directory
 
-# In order for target host to make valid calls with wget, curl etc. The local CA need to installed to target host.
+# In order for target host to make valid calls with wget, curl etc. The local CA needs to be installed to target host.
 - name: Copy rootCA.pem
   copy: 
     src: '{{ root_certificate.stdout }}/rootCA.pem'
@@ -99,7 +108,6 @@
   command: '{{ ssl_certificate_mkcert_target_dir }}/mkcert -install'
   environment:
     CAROOT: '{{ ssl_certificate_mkcert_target_root_ca_dir }}'
-#  notify: restart webserver
 
 - debug:
     msg: 'Please restart all open browsers in order for the certificates to take effect.'

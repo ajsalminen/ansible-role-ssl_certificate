@@ -31,5 +31,14 @@ ssl_certificate_mkcert_local_dir: '{{playbook_dir}}/.local/.mkcert'
 # Target host
 ssl_certificate_mkcert_target_dir: /opt
 ssl_certificate_mkcert_url: https://github.com/FiloSottile/mkcert/releases/download/v1.3.0/mkcert-v1.3.0-linux-amd64
+# This is self-generated checksum (sha256), please update this according to the 'ssl_certificate_mkcert_url'
+ssl_certificate_mkcert_checksum: 98fcf449d5a34c644bce7d3cbe2db86f43cb192f404fa1318fb449f463c05b7d
 ssl_certificate_mkcert_generated_cert_dir: /tmp
 ssl_certificate_mkcert_target_root_ca_dir: /root/.mkcert
+# You can override this variable with empty string '' if you don't want any suffix
+ssl_certificate_mkcert_common_name_suffix: .local
+# Define a list of additional names to be included in generated certificate
+ssl_certificate_mkcert_additional_names: []
+#  - localhost
+#  - 127.0.0.1
+#  - myapp.dev
