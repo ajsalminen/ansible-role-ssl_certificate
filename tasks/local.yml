@@ -39,14 +39,19 @@
 
 - name: Add domain suffix.
   set_fact: 
-    ssl_certificate_full_domain_name: '{{ ssl_certificate_key_common_name }}{{ ssl_certificate_mkcert_common_name_suffix }}'
+    __ssl_certificate_full_domain_name: '{{ ssl_certificate_key_common_name }}{{ ssl_certificate_mkcert_common_name_suffix }}'
+
+- name: Create variable for subdomains also.
+  set_fact:
+    __ssl_certificate_subdomain_name: '*.{{ __ssl_certificate_full_domain_name }}'
+
+- name: Create list out of the main domain and it's subdomains.
+  set_fact:
+    __ssl_certificate_main_domains: '{{[ __ssl_certificate_full_domain_name , __ssl_certificate_subdomain_name]}}'
 
 - name: Combine all domain names into one list.
   set_fact:
-    ssl_certificate_all_domains: >
-      '{{ [{{ ssl_certificate_full_domain_name }},
-      *.{{ssl_certificate_full_domain_name}}] +
-      ssl_certificate_mkcert_additional_names }}'
+    ssl_certificate_all_domains: '{{ __ssl_certificate_main_domains + ssl_certificate_mkcert_additional_names }}'
 
 - name: Generate certificates with mkcert.
   command: >
