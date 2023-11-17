@@ -22,5 +22,5 @@ ssl_certificate_certificate_dir: /etc/ssl/local/certs
 ssl_certificate_key_dir: /etc/ssl/local/keys
 ssl_certificate_subject: "/C=US/O=SomeOrg/OU=SomeOU/L=Somewhere/ST=CA/CN=machine.example.net"
 ssl_certificate_signing_options: -subj "{{ ssl_certificate_subject }}"
-ssl_certificate_openssl_path: /usr/bin/openssl
+ssl_certificate_openssl_path: openssl
 ssl_certificate_web_server: ''
