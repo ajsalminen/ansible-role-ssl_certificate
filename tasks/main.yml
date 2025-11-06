@@ -26,7 +26,7 @@
     OPENSSL_CONF: "{{ role_path }}/files/openssl.cnf"
   become: False
 
-- include: generate_ca_and_sign.yml
+- include_tasks: generate_ca_and_sign.yml
   when: ssl_certificate_self_signed == True
 
 # certificate installation tasks
